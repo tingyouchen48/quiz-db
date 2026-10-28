@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>演算法題庫筆記</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #ffffff; --primary: #2563eb; --text: #0f172a; --border: #e2e8f0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--primary); }
+    .card { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    textarea { width: 100%; height: 120px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    .btn-group { margin-top: 10px; display: flex; gap: 10px; }
+    button { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    button:hover { opacity: 0.9; }
+    button.secondary { background: #64748b; }
+    button.danger { background: #ef4444; }
+    input[type="text"] { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; font-size: 14px; }
+    .qa-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .qa-item:last-child { border-bottom: none; }
+    .q-text { font-weight: 600; margin-bottom: 6px; }
+    .a-text { color: #16a34a; font-weight: 600; background: #f0fdf4; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+    .stats { font-size: 0.875rem; color: #64748b; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📚 題庫筆記資料庫</h1>
+
+    <div class="card">
+      <h3>📥 貼上修練結束頁面文字</h3>
+      <textarea id="rawInput" placeholder="直接將測驗結束頁面的全文 (Ctrl+A -> Ctrl+C) 貼上到這裡..."></textarea>
+      <div class="btn-group">
+        <button onclick="importText()">解析並新增題庫</button>
+        <button class="secondary" onclick="exportData()">匯出 JSON</button>
+        <button class="danger" onclick="clearData()">清空所有題庫</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <input type="text" id="searchInput" placeholder="搜尋題目或答案關鍵字..." oninput="render()">
+      <div class="stats" id="stats">總計 0 題</div>
+      <div id="qaList"></div>
+    </div>
+  </div>
+
+  <script>
+    let db = JSON.parse(localStorage.getItem('os_alg_db') || '[]');
+
+    function saveDB() {
+      localStorage.setItem('os_alg_db', JSON.stringify(db));
+      render();
+    }
+
+    function importText() {
+      const raw = document.getElementById('rawInput').value;
+      if (!raw.trim()) return alert('請先貼上內容！');
+
+      const blocks = raw.split(/\*題目：\*/);
+      let count = 0;
+
+      blocks.forEach(block => {
+        if (!block.trim()) return;
+        
+        const lines = block.split('\n');
+        let questionLines = [];
+        let answer = '';
+        let isQuestion = true;
+
+        for (let line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('*你的答案：*') || trimmed.startsWith('*正確答案：*')) {
+            isQuestion = false;
+          }
+          if (isQuestion && trimmed) {
+            questionLines.push(trimmed);
+          }
+          if (trimmed.startsWith('*正確答案：*')) {
+            answer = trimmed.replace('*正確答案：*', '').trim();
+          }
+        }
+
+        const question = questionLines.join(' ').trim();
+
+        if (question && answer) {
+          // 避免重複加入
+          if (!db.some(item => item.q === question)) {
+            db.push({ q: question, a: answer });
+            count++;
+          }
+        }
+      });
+
+      document.getElementById('rawInput').value = '';
+      saveDB();
+      alert(`新增成功！共匯入 ${count} 道新題目。`);
+    }
+
+    function render() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const listEl = document.getElementById('qaList');
+      const filtered = db.filter(item => item.q.toLowerCase().includes(query) || item.a.toLowerCase().includes(query));
+
+      document.getElementById('stats').innerText = `目前收錄：${db.length} 題 | 篩選顯示：${filtered.length} 題`;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div style="color: #94a3b8; text-align: center;">尚無符合題目</div>';
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((item, i) => `
+        <div class="qa-item">
+          <div class="q-text">${i + 1}. ${escapeHtml(item.q)}</div>
+          <div class="a-text">正確答案：${escapeHtml(item.a)}</div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+      const anchor = document.createElement('a');
+      anchor.setAttribute("href", dataStr);
+      anchor.setAttribute("download", "quiz_database.json");
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    function clearData() {
+      if (confirm('確定要清空所有已儲存的題庫嗎？')) {
+        db = [];
+        saveDB();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
