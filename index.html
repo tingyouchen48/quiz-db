@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>演算法與作業系統題庫筆記</title>
+  <title>演算法題庫筆記</title>
   <style>
     :root { --bg: #f8fafc; --card: #ffffff; --primary: #2563eb; --text: #0f172a; --border: #e2e8f0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
@@ -18,17 +18,17 @@
     button.danger { background: #ef4444; }
     input[type="text"], select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; }
     .filter-row { display: flex; gap: 10px; margin-bottom: 15px; }
-    .qa-item { border-bottom: 1px solid var(--border); padding: 14px 0; }
+    .qa-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
     .qa-item:last-child { border-bottom: none; }
-    .q-text { font-weight: 600; margin-bottom: 6px; line-height: 1.4; }
-    .a-text { color: #16a34a; font-weight: 600; background: #f0fdf4; padding: 6px 10px; border-radius: 4px; display: inline-block; line-height: 1.4; }
+    .q-text { font-weight: 600; margin-bottom: 8px; line-height: 1.5; font-size: 15px; }
+    .a-text { color: #15803d; font-weight: 600; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 6px; display: block; margin-top: 6px; line-height: 1.6; }
     .badge { display: inline-block; background: #dbeafe; color: #1e40af; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 12px; margin-bottom: 6px; }
     .stats { font-size: 0.875rem; color: #64748b; margin-bottom: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📚 演算法與作業系統題庫筆記</h1>
+    <h1>📚 演算法題庫筆記</h1>
 
     <div class="card">
       <h3>📥 貼上修練結束頁面文字</h3>
@@ -68,7 +68,6 @@
       const raw = document.getElementById('rawInput').value;
       if (!raw.trim()) return alert('請先貼上內容！');
 
-      // 自動偵測章節名稱
       let detectedChapter = '';
       const chapterMatch = raw.match(/本次在「(.*?)」的修練已結束/);
       if (chapterMatch && chapterMatch[1]) {
@@ -142,6 +141,15 @@
       }
     }
 
+    function formatAnswer(ans) {
+      if (!ans) return '';
+      const parts = ans.split(/\s*\/\s*/).filter(p => p.trim() !== '');
+      if (parts.length > 1) {
+        return parts.map(p => `• ${escapeHtml(p)}`).join('<br>');
+      }
+      return escapeHtml(ans);
+    }
+
     function render() {
       updateChapterDropdown();
       const query = document.getElementById('searchInput').value.toLowerCase();
@@ -166,7 +174,10 @@
         <div class="qa-item">
           <div><span class="badge">📖 ${escapeHtml(item.chapter || '未分類章節')}</span></div>
           <div class="q-text">${i + 1}. ${escapeHtml(item.q)}</div>
-          <div class="a-text">正確答案：${escapeHtml(item.a)}</div>
+          <div class="a-text">
+            <div style="font-size: 13px; color: #166534; margin-bottom: 4px;">正確答案：</div>
+            ${formatAnswer(item.a)}
+          </div>
         </div>
       `).join('');
     }
