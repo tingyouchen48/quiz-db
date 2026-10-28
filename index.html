@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>演算法題庫筆記</title>
+  <title>演算法與作業系統題庫筆記</title>
   <style>
     :root { --bg: #f8fafc; --card: #ffffff; --primary: #2563eb; --text: #0f172a; --border: #e2e8f0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
@@ -28,7 +28,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>📚 演算法題庫筆記</h1>
+    <h1>📚 演算法與作業系統題庫筆記</h1>
 
     <div class="card">
       <h3>📥 貼上修練結束頁面文字</h3>
@@ -109,10 +109,15 @@
         }
 
         const question = qParts.join(' ').trim();
-        const answer = aParts.join(' / ').trim();
+        const answer = aParts.join('[NEXT_OPT]').trim();
 
         if (question && answer) {
-          if (!db.some(item => item.q === question)) {
+          const existingIdx = db.findIndex(item => item.q === question);
+          if (existingIdx !== -1) {
+            // 已存在則更新為修復後的答案格式
+            db[existingIdx].a = answer;
+            db[existingIdx].chapter = detectedChapter;
+          } else {
             db.push({ q: question, a: answer, chapter: detectedChapter });
             count++;
           }
@@ -122,7 +127,7 @@
       document.getElementById('rawInput').value = '';
       document.getElementById('chapterInput').value = '';
       saveDB();
-      alert(`新增成功！共匯入 ${count} 道題目，已歸類至【${detectedChapter}】。`);
+      alert(`更新完成！新增 ${count} 題，並修正已收錄題目的公式排版。`);
     }
 
     function updateChapterDropdown() {
@@ -143,7 +148,15 @@
 
     function formatAnswer(ans) {
       if (!ans) return '';
-      const parts = ans.split(/\s*\/\s*/).filter(p => p.trim() !== '');
+      let parts = [];
+      if (ans.includes('[NEXT_OPT]')) {
+        parts = ans.split('[NEXT_OPT]').filter(p => p.trim() !== '');
+      } else if (ans.includes(' / ')) {
+        parts = ans.split(' / ').filter(p => p.trim() !== '');
+      } else {
+        parts = [ans];
+      }
+
       if (parts.length > 1) {
         return parts.map(p => `• ${escapeHtml(p)}`).join('<br>');
       }
